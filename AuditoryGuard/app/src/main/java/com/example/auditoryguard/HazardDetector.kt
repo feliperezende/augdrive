@@ -46,33 +46,22 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
     }
 
     private fun loadModel() {
-        fun tryLoad(delegate: com.google.mediapipe.tasks.core.Delegate, label: String) {
-            try {
-                val baseOptions = BaseOptions.builder()
-                    .setModelAssetPath("efficientdet_lite2.tflite")
-                    .setDelegate(delegate)
-                    .build()
-
-                val options = ObjectDetector.ObjectDetectorOptions.builder()
-                    .setBaseOptions(baseOptions)
-                    .setMaxResults(5)
-                    .setScoreThreshold(CONFIDENCE_THRESHOLD)
-                    .setRunningMode(RunningMode.IMAGE)
-                    .build()
-
-                objectDetector = ObjectDetector.createFromOptions(context, options)
-                Log.i("HazardDetector", "Model loaded with $label delegate on ${Build.MODEL}")
-            } catch (e: Exception) {
-                throw RuntimeException("Failed with $label: ${e.message}")
-            }
-        }
-
         try {
-            tryLoad(com.google.mediapipe.tasks.core.Delegate.GPU, "GPU")
+            val baseOptions = BaseOptions.builder()
+                .setModelAssetPath("efficientdet_lite2.tflite")
+                .build()
+
+            val options = ObjectDetector.ObjectDetectorOptions.builder()
+                .setBaseOptions(baseOptions)
+                .setMaxResults(5)
+                .setScoreThreshold(CONFIDENCE_THRESHOLD)
+                .setRunningMode(RunningMode.IMAGE)
+                .build()
+
+            objectDetector = ObjectDetector.createFromOptions(context, options)
+            Log.i("HazardDetector", "MediaPipe model loaded on CPU (${Build.MODEL})")
         } catch (e: Exception) {
-            Log.w("HazardDetector", "GPU delegate failed: ${e.message}")
-            Log.i("HazardDetector", "Falling back to CPU delegate")
-            tryLoad(com.google.mediapipe.tasks.core.Delegate.CPU, "CPU")
+            Log.e("HazardDetector", "Failed to load MediaPipe model: ${e.message}", e)
         }
     }
 
