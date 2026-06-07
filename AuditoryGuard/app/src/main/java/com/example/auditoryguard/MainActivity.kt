@@ -65,6 +65,12 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     }
+
+                    override fun onRiskEvent(event: RiskEvent) {
+                        runOnUiThread {
+                            overlayView.appendRiskEvent("${event.message} ${event.label} ${(event.score * 100).toInt()}%")
+                        }
+                    }
                 }
                 rebindCameraToActivity()
             }

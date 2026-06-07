@@ -23,6 +23,7 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
             sourceWidth: Int,
             sourceHeight: Int
         )
+        fun onRiskEvent(event: RiskEvent)
     }
 
     private var objectDetector: ObjectDetector? = null
@@ -35,6 +36,8 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
     private val detectorExecutor = Executors.newSingleThreadExecutor()
 
     var detectionListener: DetectionListener? = null
+
+    private val riskAnalyzer = RiskAnalyzer()
 
     // Frame skipping: only run inference on every Nth frame to keep latency low.
     private val frameSkip = 2
@@ -92,13 +95,25 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
                 result?.let {
                     val detections = buildDetections(it, inferenceW, inferenceH)
                     detectionListener?.onDetections(detections, inferenceW, inferenceH)
-                    processResults(it, inferenceW, inferenceH)
+
+                    val trackedDetections = detections.map { d ->
+                        TrackedDetection(d.label, d.score, d.rect, System.currentTimeMillis())
+                    }
+
+                    val riskEvents = riskAnalyzer.analyze(
+                        trackedDetections,
+                        prepared.bitmap,
+                        Utils.INFERENCE_INPUT_WIDTH,
+                        Utils.INFERENCE_INPUT_HEIGHT
+                    )
+
+                    processRiskEvents(riskEvents)
+
                     if (detections.isNotEmpty()) {
                         Log.d("HazardDetector", "Visible labels: ${detections.map { it.label }.joinToString(", ")}")
                     }
                     val totalMs = (t3 - t0) / 1_000_000
                     val prepMs = (t1 - t0) / 1_000_000
-                    val mpImageMs = (t2 - t1) / 1_000_000
                     val detectMs = (t3 - t2) / 1_000_000
                     Log.d("HazardDetector", "DETECTION [${Build.MODEL}] total=${totalMs}ms prep=${prepMs}ms detect=${detectMs}ms")
                 }
@@ -141,29 +156,18 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
         return list
     }
 
-    private fun processResults(result: ObjectDetectorResult, width: Int, height: Int) {
+    private fun processRiskEvents(events: List<RiskEvent>) {
         val now = System.currentTimeMillis()
 
-        for (detection in result.detections()) {
-            val category = detection.categories().firstOrNull() ?: continue
-            if (category.score() < CONFIDENCE_THRESHOLD) continue
-
-            val bbox = detection.boundingBox()
-            if (!isCloseEnough(bbox, width, height)) continue
-
-            val label = category.categoryName().lowercase()
-            val key = when {
-                label.contains("person") || label.contains("pedestrian") -> "person"
-                label.contains("car") || label.contains("truck") || label.contains("bus") || label.contains("vehicle") || label.contains("motorcycle") || label.contains("bicycle") -> "car"
-                label.contains("traffic") || label.contains("light") || label.contains("semáforo") || label.contains("semaforo") || label.contains("semaphor") || label.contains("signal") -> "light"
-                else -> continue
-            }
-
+        for (event in events) {
+            val key = event.type.name
             val lastAlert = cooldownMap[key] ?: 0
+
             if (now - lastAlert > COOLDOWN_MS) {
                 cooldownMap[key] = now
-                alertManager.triggerAlert(key)
-                Log.d("HazardDetector", "ALERT: $key detected")
+                alertManager.triggerAlert(event)
+                detectionListener?.onRiskEvent(event)
+                Log.d("HazardDetector", "RISK: ${event.type.name} — ${event.message}")
             }
         }
     }

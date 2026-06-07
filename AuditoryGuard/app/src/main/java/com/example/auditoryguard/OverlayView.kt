@@ -21,7 +21,8 @@ class OverlayView @JvmOverloads constructor(
 
     data class LogEntry(
         val timestamp: Long,
-        val text: String
+        val text: String,
+        val isRiskEvent: Boolean = false
     )
 
     private val boxPaint = Paint().apply {
@@ -57,6 +58,13 @@ class OverlayView @JvmOverloads constructor(
     private val logEntries = mutableListOf<LogEntry>()
     private val maxLogEntries = 6
 
+    private val riskEventPaint = Paint().apply {
+        color = Color.argb(255, 255, 80, 80)
+        textSize = 32f
+        isAntiAlias = true
+        isFakeBoldText = true
+    }
+
     fun setDetections(
         newDetections: List<Detection>,
         sourceWidth: Int = this.sourceWidth,
@@ -68,8 +76,8 @@ class OverlayView @JvmOverloads constructor(
         invalidate()
     }
 
-    fun appendLog(text: String) {
-        logEntries.add(LogEntry(System.currentTimeMillis(), text))
+    fun appendLog(text: String, isRiskEvent: Boolean = false) {
+        logEntries.add(LogEntry(System.currentTimeMillis(), text, isRiskEvent))
         if (logEntries.size > maxLogEntries) {
             logEntries.removeAt(0)
         }
@@ -79,6 +87,10 @@ class OverlayView @JvmOverloads constructor(
     fun clearLog() {
         logEntries.clear()
         invalidate()
+    }
+
+    fun appendRiskEvent(text: String) {
+        appendLog("⚠ $text", isRiskEvent = true)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -158,7 +170,7 @@ class OverlayView @JvmOverloads constructor(
         val padding = 12f
         val lineHeight = logTextPaint.textSize * 1.4f
         val logH = logEntries.size * lineHeight + padding * 2
-        val logW = canvas.width * 0.35f
+        val logW = canvas.width * 0.40f
         val logLeft = padding
         val logTop = canvas.height - logH - padding
 
@@ -168,7 +180,8 @@ class OverlayView @JvmOverloads constructor(
         var y = logTop + padding + lineHeight
         for (entry in logEntries) {
             val timeStr = formatter.format(java.util.Date(entry.timestamp))
-            canvas.drawText("[$timeStr] ${entry.text}", logLeft + padding, y, logTextPaint)
+            val paint = if (entry.isRiskEvent) riskEventPaint else logTextPaint
+            canvas.drawText("[$timeStr] ${entry.text}", logLeft + padding, y, paint)
             y += lineHeight
         }
     }
