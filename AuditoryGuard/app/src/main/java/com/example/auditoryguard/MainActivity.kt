@@ -22,6 +22,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var previewView: PreviewView
     private lateinit var overlayView: OverlayView
     private lateinit var statusText: TextView
+    private lateinit var versionText: TextView
 
     private var cameraHelper: CameraHelper? = null
     private var hazardDetector: HazardDetector? = null
@@ -88,6 +89,8 @@ class MainActivity : AppCompatActivity() {
         previewView = findViewById(R.id.previewView)
         overlayView = findViewById(R.id.overlayView)
         statusText = findViewById(R.id.statusText)
+        versionText = findViewById(R.id.versionText)
+        versionText.text = "v${BuildConfig.VERSION_NAME}"
 
         findViewById<TextView>(R.id.warningText).text = getString(R.string.splash_warning)
 

@@ -30,8 +30,17 @@
             android:textSize="11sp"
             android:gravity="center"
             android:textColor="#FFFFFF"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="4dp"
             android:text="Camera: idle" />
+
+        <TextView
+            android:id="@+id/versionText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
+            android:gravity="center"
+            android:textColor="#AAAAAA"
+            android:layout_marginBottom="12dp" />
 
         <LinearLayout
             android:layout_width="wrap_content"
