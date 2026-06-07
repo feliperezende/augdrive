@@ -1,8 +1,9 @@
 package com.example.auditoryguard
 
 import android.content.Context
-import android.media.SoundPool
 import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.SoundPool
 import android.util.Log
 import com.example.auditoryguard.R
 
@@ -11,7 +12,7 @@ class AlertManager(private val context: Context) {
     private var soundPool: SoundPool? = null
     private val soundIds = mutableMapOf<String, Int>()
     private val loadedSoundIds = mutableMapOf<String, Int>()
-    private var volume = 0.7f  // 70% of max volume
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     init {
         val audioAttributes = AudioAttributes.Builder()
@@ -24,12 +25,10 @@ class AlertManager(private val context: Context) {
             .setAudioAttributes(audioAttributes)
             .build()
 
-        // Load raw sound resources
         soundIds["person"] = R.raw.alert_person
         soundIds["car"] = R.raw.alert_car
         soundIds["light"] = R.raw.alert_light
 
-        // Preload sounds (SoundPool.load is async; in production add OnLoadCompleteListener)
         soundIds.forEach { (type, resId) ->
             if (resId != 0) {
                 val soundPoolId = soundPool?.load(context, resId, 1) ?: 0
@@ -40,13 +39,19 @@ class AlertManager(private val context: Context) {
 
     fun triggerAlert(type: String) {
         val soundId = loadedSoundIds[type] ?: return
-        if (soundId > 0) {
-            soundPool?.play(soundId, volume, volume, 1, 0, 1.0f)
-            Log.d("AlertManager", "Playing alert for: $type")
-        } else {
-            // Fallback using resource ID (for demo purposes)
-            soundPool?.play(soundIds[type] ?: 0, volume, volume, 1, 0, 1.0f)
-        }
+        if (soundId <= 0) return
+
+        val savedVolume = audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION)
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION)
+        audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, maxVolume, 0)
+
+        soundPool?.play(soundId, 1.0f, 1.0f, 1, 0, 1.0f)
+        Log.d("AlertManager", "Playing alert for: $type (volume overridden to max)")
+
+        // Restore original volume after a short delay
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, savedVolume, 0)
+        }, 500)
     }
 
     fun release() {
