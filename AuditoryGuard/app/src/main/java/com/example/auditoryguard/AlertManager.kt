@@ -1,62 +1,44 @@
 package com.example.auditoryguard
 
 import android.content.Context
-import android.media.AudioAttributes
 import android.media.AudioManager
-import android.media.SoundPool
+import android.media.ToneGenerator
 import android.util.Log
-import com.example.auditoryguard.R
 
 class AlertManager(private val context: Context) {
 
-    private var soundPool: SoundPool? = null
-    private val soundIds = mutableMapOf<String, Int>()
-    private val loadedSoundIds = mutableMapOf<String, Int>()
-    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private var audioManager: AudioManager? = null
 
     init {
-        val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
-
-        soundPool = SoundPool.Builder()
-            .setMaxStreams(3)
-            .setAudioAttributes(audioAttributes)
-            .build()
-
-        soundIds["person"] = R.raw.alert_person
-        soundIds["car"] = R.raw.alert_car
-        soundIds["light"] = R.raw.alert_light
-
-        soundIds.forEach { (type, resId) ->
-            if (resId != 0) {
-                val soundPoolId = soundPool?.load(context, resId, 1) ?: 0
-                loadedSoundIds[type] = soundPoolId
-            }
-        }
+        audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        Log.d("AlertManager", "AlertManager initialized (ToneGenerator mode)")
     }
 
     fun triggerAlert(type: String) {
-        val soundId = loadedSoundIds[type] ?: return
-        if (soundId <= 0) return
+        val am = audioManager ?: return
 
-        val savedVolume = audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION)
-        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION)
-        audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, maxVolume, 0)
+        val savedVol = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+        val maxVol = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        am.setStreamVolume(AudioManager.STREAM_MUSIC, maxVol, 0)
 
-        soundPool?.play(soundId, 1.0f, 1.0f, 1, 0, 1.0f)
-        Log.d("AlertManager", "Playing alert for: $type (volume overridden to max)")
+        val toneType: Int = when (type) {
+            "person" -> ToneGenerator.TONE_CDMA_EMERGENCY_RINGBACK
+            "car" -> ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD
+            "light" -> ToneGenerator.TONE_CDMA_ALERT_AUTOREDIAL_LITE
+            else -> ToneGenerator.TONE_CDMA_ALERT_AUTOREDIAL_LITE
+        }
 
-        // Restore original volume after a short delay
+        val tg = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+        tg.startTone(toneType, 600)
+        Log.d("AlertManager", "Playing tone for: $type (toneType=$toneType)")
+
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, savedVolume, 0)
-        }, 500)
+            tg.release()
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, savedVol, 0)
+        }, 700)
     }
 
     fun release() {
-        soundPool?.release()
-        soundPool = null
-        soundIds.clear()
+        // Nothing to release with ToneGenerator
     }
 }
