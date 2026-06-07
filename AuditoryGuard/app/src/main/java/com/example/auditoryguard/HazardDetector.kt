@@ -29,8 +29,8 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
     private val coroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val cooldownMap = mutableMapOf<String, Long>()
     private val COOLDOWN_MS = 4000L
-    private val CONFIDENCE_THRESHOLD = 0.80f
-    private val MIN_AREA_RATIO = 0.02f
+    private val CONFIDENCE_THRESHOLD = 0.65f
+    private val MIN_AREA_RATIO = 0.01f  // 1% of image area (was 2%)
 
     private val detectorExecutor = Executors.newSingleThreadExecutor()
 
@@ -93,6 +93,9 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
                     val detections = buildDetections(it, inferenceW, inferenceH)
                     detectionListener?.onDetections(detections, inferenceW, inferenceH)
                     processResults(it, inferenceW, inferenceH)
+                    if (detections.isNotEmpty()) {
+                        Log.d("HazardDetector", "Visible labels: ${detections.map { it.label }.joinToString(", ")}")
+                    }
                     val totalMs = (t3 - t0) / 1_000_000
                     val prepMs = (t1 - t0) / 1_000_000
                     val mpImageMs = (t2 - t1) / 1_000_000
@@ -150,9 +153,9 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
 
             val label = category.categoryName().lowercase()
             val key = when {
-                label.contains("person") -> "person"
-                label.contains("car") -> "car"
-                label.contains("traffic light") || label.contains("stoplight") -> "light"
+                label.contains("person") || label.contains("pedestrian") -> "person"
+                label.contains("car") || label.contains("truck") || label.contains("bus") || label.contains("vehicle") || label.contains("motorcycle") || label.contains("bicycle") -> "car"
+                label.contains("traffic") || label.contains("light") || label.contains("semáforo") || label.contains("semaforo") || label.contains("semaphor") || label.contains("signal") -> "light"
                 else -> continue
             }
 
