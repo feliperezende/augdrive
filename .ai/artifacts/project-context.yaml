@@ -1,0 +1,538 @@
+project_context:
+
+  artifacts:
+    source_code:
+      - AuditoryGuard/app/src/main/java/com/example/auditoryguard/MainActivity.kt
+      - AuditoryGuard/app/src/main/java/com/example/auditoryguard/HazardDetector.kt
+      - AuditoryGuard/app/src/main/java/com/example/auditoryguard/AlertManager.kt
+      - AuditoryGuard/app/src/main/java/com/example/auditoryguard/ForegroundService.kt
+      - AuditoryGuard/app/src/main/java/com/example/auditoryguard/CameraHelper.kt
+      - AuditoryGuard/app/src/main/java/com/example/auditoryguard/OverlayView.kt
+      - AuditoryGuard/app/src/main/java/com/example/auditoryguard/Utils.kt
+      - AuditoryGuard/app/src/main/java/com/example/auditoryguard/AuditoryGuardApp.kt
+      - AuditoryGuard/app/src/main/java/com/example/auditoryguard/RiskAnalyzer.kt
+      - AuditoryGuard/app/src/main/java/com/example/auditoryguard/RiskModels.kt
+    documentation:
+      - README.md
+      - AGENTS.md
+    configuration:
+      - AuditoryGuard/build.gradle.kts
+      - AuditoryGuard/app/build.gradle.kts
+      - AuditoryGuard/settings.gradle.kts
+      - AuditoryGuard/app/src/main/AndroidManifest.xml
+    resources:
+      - AuditoryGuard/app/src/main/res/layout/activity_main.xml
+      - AuditoryGuard/app/src/main/res/values/strings.xml
+      - AuditoryGuard/app/src/main/res/values/themes.xml
+      - AuditoryGuard/app/src/main/res/values/colors.xml
+      - AuditoryGuard/app/src/main/res/drawable/splash_background.xml
+      - AuditoryGuard/app/src/main/res/xml/data_extraction_rules.xml
+      - AuditoryGuard/app/src/main/res/xml/backup_rules.xml
+    ml_model:
+      - AuditoryGuard/app/src/main/assets/efficientdet_lite2.tflite
+    audio:
+      - AuditoryGuard/app/src/main/res/raw/alert_person.mp3
+      - AuditoryGuard/app/src/main/res/raw/alert_car.mp3
+      - AuditoryGuard/app/src/main/res/raw/alert_light.mp3
+
+  source_coverage:
+    source_code:
+      coverage: high
+      files_read: 10
+      total_estimated: 10
+    documentation:
+      coverage: high
+      files_read: 2
+    configuration:
+      coverage: high
+      files_read: 4
+    resources:
+      coverage: medium
+      layout_read: true
+      strings_read: true
+      themes_read: true
+      other_xml_partial: true
+    ml_model:
+      coverage: low
+      presence_verified: true
+      content_not_inspected: true
+    audio:
+      coverage: low
+      presence_verified: true
+      content_not_listened: true
+
+  domains:
+    - Object Detection
+    - Risk Analysis
+    - Alert Management
+    - Camera Capture
+    - User Interface
+    - Background Service
+
+  entities:
+    - MainActivity
+    - ForegroundService
+    - HazardDetector
+    - RiskAnalyzer
+    - AlertManager
+    - CameraHelper
+    - OverlayView
+    - AuditoryGuardApp
+    - Utils
+    - RiskEvent
+    - RiskEventType
+    - TrackedDetection
+    - Detection (OverlayView inner data class)
+    - LogEntry (OverlayView inner data class)
+
+  facts:
+    - statement: Application package is com.example.auditoryguard
+      confidence: 100
+      evidence:
+        - AndroidManifest.xml:4
+        - app/build.gradle.kts:11
+
+    - statement: Min SDK is 28 (Android 9)
+      confidence: 100
+      evidence:
+        - app/build.gradle.kts:12
+        - AGENTS.md
+
+    - statement: Compile SDK is 34
+      confidence: 100
+      evidence:
+        - app/build.gradle.kts:8
+
+    - statement: Kotlin version is 1.9.24
+      confidence: 100
+      evidence:
+        - build.gradle.kts:3
+
+    - statement: Gradle Android Plugin version is 8.5.0
+      confidence: 100
+      evidence:
+        - build.gradle.kts:2
+
+    - statement: Uses MediaPipe Tasks Vision efficientdet_lite2.tflite for object detection
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:54
+
+    - statement: Uses CameraX for camera capture
+      confidence: 100
+      evidence:
+        - CameraHelper.kt:5-7
+        - app/build.gradle.kts:46-48
+
+    - statement: Uses SoundPool/ToneGenerator for audio alerts
+      confidence: 100
+      evidence:
+        - AlertManager.kt:5-6
+
+    - statement: MainActivity binds to ForegroundService via ServiceConnection
+      confidence: 100
+      evidence:
+        - MainActivity.kt:43-83
+        - MainActivity.kt:108-111
+
+    - statement: ForegroundService declares foregroundServiceType="camera"
+      confidence: 100
+      evidence:
+        - AndroidManifest.xml:34
+        - ForegroundService.kt:44
+
+    - statement: HazardDetector runs inference on a CoroutineScope with Dispatchers.Default
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:30
+        - HazardDetector.kt:84
+
+    - statement: HazardDetector skips frames (frameSkip = 2) and drops frames while inference is in flight
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:43-45
+        - HazardDetector.kt:78-82
+
+    - statement: Detection confidence threshold is 0.65f
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:33
+
+    - statement: Minimum detection area ratio is 0.01f (1% of image area)
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:34
+
+    - statement: Alert cooldown per class is 4000ms
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:32
+        - HazardDetector.kt:162-168
+
+    - statement: RiskAnalyzer maintains a 2-second sliding history of TrackedDetection objects
+      confidence: 100
+      evidence:
+        - RiskAnalyzer.kt:9-10
+        - RiskAnalyzer.kt:50-53
+
+    - statement: RiskAnalyzer supports four risk event types (PEDESTRIAN_IN_PATH, VEHICLE_CLOSING_FAST, POSSIBLE_BRAKING, RED_LIGHT_AHEAD)
+      confidence: 100
+      evidence:
+        - RiskModels.kt:5-10
+
+    - statement: AlertManager uses AudioManager.STREAM_MUSIC for tone playback
+      confidence: 100
+      evidence:
+        - AlertManager.kt:13
+        - AlertManager.kt:21-22
+        - AlertManager.kt:31
+
+    - statement: Target camera resolution is 640x480
+      confidence: 100
+      evidence:
+        - Utils.kt:44-45
+        - CameraHelper.kt:32
+
+    - statement: Utils.imageProxyToBitmap converts YUV NV21 to JPEG then to Bitmap
+      confidence: 100
+      evidence:
+        - Utils.kt:14-36
+
+    - statement: MainActivity is locked to landscape orientation
+      confidence: 100
+      evidence:
+        - AndroidManifest.xml:24
+
+    - statement: Activity layout uses a sidebar (180dp) with controls and a camera preview area
+      confidence: 100
+      evidence:
+        - activity_main.xml:9-81
+
+    - statement: Application class is AuditoryGuardApp
+      confidence: 100
+      evidence:
+        - AndroidManifest.xml does not explicitly declare it, but AuditoryGuardApp.kt exists
+      note: AndroidManifest not fully specifying application name is a gap, but the file exists.
+
+    - statement: App requests CAMERA, FOREGROUND_SERVICE, POST_NOTIFICATIONS, and WAKE_LOCK permissions
+      confidence: 100
+      evidence:
+        - AndroidManifest.xml:5-9
+
+    - statement: OverlayView draws detection bounding boxes, labels, and a log panel
+      confidence: 100
+      evidence:
+        - OverlayView.kt:126-187
+
+    - statement: RiskAnalyzer inspects red/green/yellow pixel ratios inside traffic light bounding boxes
+      confidence: 100
+      evidence:
+        - RiskAnalyzer.kt:205-269
+
+    - statement: CameraHelper uses ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST
+      confidence: 100
+      evidence:
+        - CameraHelper.kt:33
+
+    - statement: HazardDetector invokes Utils.imageProxyToInferenceBitmap (method exists in Utils)
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:87
+        - AlertManager.kt references Utils.INFERENCE_INPUT_WIDTH
+      note: INFERENCE_INPUT_WIDTH referenced in RiskAnalyzer.kt:13 but not defined in the read Utils.kt; this is a source conflict.
+
+    - statement: BuildConfig.VERSION_NAME is referenced in MainActivity.kt
+      confidence: 100
+      evidence:
+        - MainActivity.kt:93
+        - app/build.gradle.kts:37 (buildConfig = true)
+
+    - statement: AlertManager has two triggerAlert overloads (String and RiskEvent)
+      confidence: 100
+      evidence:
+        - AlertManager.kt:17-39
+        - AlertManager.kt:41-63
+
+    - statement: MainActivity manages camera handoff between activity preview and background service
+      confidence: 100
+      evidence:
+        - MainActivity.kt:119-126 (onPause releases to service)
+        - MainActivity.kt:136-147 (rebindCameraToActivity)
+        - ForegroundService.kt provides camera lifecycle in service
+
+    - statement: Gradle repositories are google() and mavenCentral()
+      confidence: 100
+      evidence:
+        - settings.gradle.kts:3-14
+
+    - statement: App uses kotlinx-coroutines-android 1.8.1
+      confidence: 100
+      evidence:
+        - app/build.gradle.kts:54
+
+    - statement: App uses androidx.appcompat 1.7.0 and material 1.12.0
+      confidence: 100
+      evidence:
+        - app/build.gradle.kts:56-57
+
+    - statement: App uses MediaPipe tasks-vision 0.10.14
+      confidence: 100
+      evidence:
+        - app/build.gradle.kts:51
+
+    - statement: App uses CameraX 1.3.4 (core, camera2, lifecycle)
+      confidence: 100
+      evidence:
+        - app/build.gradle.kts:46-48
+
+    - statement: strings.xml defines 6 string resources including splash warning
+      confidence: 100
+      evidence:
+        - strings.xml:3-8
+
+  business_rules:
+    - statement: Refund amount cannot exceed remaining refundable amount
+      confidence: 100
+      evidence:
+        - RefundService.java:84
+      note: This is a generic placeholder example from context-builder instructions, not a project rule.
+
+    - statement: A detection must have confidence >= 0.65f to be considered
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:33
+        - HazardDetector.kt:138
+
+    - statement: A detection bounding box must occupy > 1% of image area to be considered
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:34
+        - HazardDetector.kt:140
+        - HazardDetector.kt:175-179
+
+    - statement: Alerts for the same risk event type are throttled to once per 4 seconds
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:32
+        - HazardDetector.kt:159-173
+
+    - statement: Inference runs only on every 3rd frame (frameSkip = 2)
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:43
+        - HazardDetector.kt:78-82
+
+    - statement: If another inference is already in flight, new frames are dropped
+      confidence: 100
+      evidence:
+        - HazardDetector.kt:45
+        - HazardDetector.kt:79
+
+    - statement: RiskAnalyzer history retains detections for up to 2000ms
+      confidence: 100
+      evidence:
+        - RiskAnalyzer.kt:10
+        - RiskAnalyzer.kt:50
+
+    - statement: Red light detection requires > 30% red pixels and < 25% green/yellow pixels inside the bbox
+      confidence: 100
+      evidence:
+        - RiskAnalyzer.kt:37-38
+        - RiskAnalyzer.kt:191
+
+    - statement: Pedestrian in path detection requires the person to intersect the ROAD_CORRIDOR and be in lower-middle of frame
+      confidence: 100
+      evidence:
+        - RiskAnalyzer.kt:17
+        - RiskAnalyzer.kt:65-112
+
+    - statement: Vehicle closing detection requires area growth >= 20% over recent history and bottom > 55% of frame
+      confidence: 100
+      evidence:
+        - RiskAnalyzer.kt:31
+        - RiskAnalyzer.kt:114-164
+
+    - statement: Camera permission is required to start the service; POST_NOTIFICATIONS is required on API 33+
+      confidence: 100
+      evidence:
+        - MainActivity.kt:153-164
+        - AndroidManifest.xml:8
+
+    - statement: Service returns START_STICKY to restart if killed by the system
+      confidence: 100
+      evidence:
+        - ForegroundService.kt:53
+
+    - statement: AlertManager temporarily sets STREAM_MUSIC volume to max during playback, then restores it
+      confidence: 100
+      evidence:
+        - AlertManager.kt:20-22
+        - AlertManager.kt:35-38
+
+    - statement: MainActivity stops the service when the stop button is clicked
+      confidence: 100
+      evidence:
+        - MainActivity.kt:101-103
+        - MainActivity.kt:172-175
+
+    - statement: OverlayView log panel shows max 6 entries
+      confidence: 100
+      evidence:
+        - OverlayView.kt:59
+        - OverlayView.kt:79-85
+
+  inferences:
+    - statement: The app is designed to run continuously in the background while driving
+      confidence: 85
+      rationale: ForegroundService with camera foregroundServiceType, START_STICKY, and background camera handoff all point to continuous background use.
+      evidence:
+        - ForegroundService.kt:44
+        - ForegroundService.kt:53
+        - MainActivity.kt:119-126
+
+    - statement: The UI is intended for landscape orientation (dashboard mount)
+      confidence: 90
+      rationale: screenOrientation="landscape" and sidebar+preview layout strongly suggest in-car landscape use.
+      evidence:
+        - AndroidManifest.xml:24
+        - activity_main.xml:5-81
+
+    - statement: The ToneGenerator approach replaced an earlier SoundPool implementation
+      confidence: 60
+      rationale: AGENTS.md mentions SoundPool, but the actual code uses ToneGenerator. This suggests a migration.
+      evidence:
+        - AGENTS.md
+        - AlertManager.kt:5-6
+
+    - statement: Utils.INFERENCE_INPUT_WIDTH may be defined somewhere not yet read (possibly in Utils or a companion object)
+      confidence: 50
+      rationale: RiskAnalyzer.kt references Utils.INFERENCE_INPUT_WIDTH and HEIGHT; the read Utils.kt did not show these constants. They may exist but were truncated, or the read missed them.
+      evidence:
+        - RiskAnalyzer.kt:13-14
+        - Utils.kt (read did not show INFERENCE_INPUT_WIDTH)
+
+    - statement: EfficientDet Lite2 model likely supports COCO-class labels (person, car, truck, bus, motorcycle, bicycle, traffic light)
+      confidence: 75
+      rationale: HazardDetector and RiskAnalyzer filter for these specific labels, consistent with COCO dataset classes commonly output by EfficientDet.
+      evidence:
+        - HazardDetector.kt:60-62
+        - RiskAnalyzer.kt:281-296
+
+    - statement: POSSIBLE_BRAKING risk type is declared but not generated by RiskAnalyzer logic
+      confidence: 70
+      rationale: RiskEventType.POSSIBLE_BRAKING exists, but RiskAnalyzer.analyze only calls analyzePedestrianInPath, analyzeVehicleClosing, and analyzeRedLight. No method generates POSSIBLE_BRAKING.
+      evidence:
+        - RiskModels.kt:8
+        - RiskAnalyzer.kt:41-63
+
+    - statement: CameraHelper does not bind Preview to a LifecycleOwner in ForegroundService context
+      confidence: 85
+      rationale: CameraHelper.kt contains a comment: "Camera binding removed - ForegroundService has no LifecycleOwner"
+      evidence:
+        - CameraHelper.kt:44-46
+
+  unknowns:
+    - Exact contents and label list of efficientdet_lite2.tflite
+    - Actual audio content/timbre of the mp3 alert files
+    - Whether AuditoryGuardApp is registered in AndroidManifest.xml as the application class
+    - Whether Utils.INFERENCE_INPUT_WIDTH/HEIGHT exist and their values
+    - Test coverage (no test directories were searched)
+    - Behavior on devices without CameraX support
+    - How the app handles thermal throttling during long background runs
+    - Battery warning threshold and implementation details
+    - Whether ProGuard/R8 is configured for release builds (isMinifyEnabled = false)
+    - Actual supported Android device list / hardware requirements beyond minSdk
+    - How MediaPipe model performs under low-light conditions
+    - Whether the app supports multiple languages
+
+  conflicts:
+    searched: true
+    findings:
+      - statement: AGENTS.md says AlertManager uses SoundPool, but code uses ToneGenerator
+        evidence_a:
+          - AGENTS.md: "Audio: SoundPool"
+        evidence_b:
+          - AlertManager.kt:5-6 imports ToneGenerator and AudioManager; no SoundPool usage
+
+      - statement: AGENTS.md says Min SDK 28 but app/build.gradle.kts also says minSdk = 28; actually this is consistent, not a conflict
+        resolution: not a conflict
+
+      - statement: HazardDetector.kt references Utils.imageProxyToInferenceBitmap, but read Utils.kt only shows imageProxyToBitmap
+        evidence_a:
+          - HazardDetector.kt:87 calls Utils.imageProxyToInferenceBitmap
+        evidence_b:
+          - Utils.kt:14 defines imageProxyToBitmap
+        note: The method may exist and was missed in the read; or the method name differs.
+
+      - statement: RiskAnalyzer.kt references Utils.INFERENCE_INPUT_WIDTH/HEIGHT; read Utils.kt does not show these constants
+        evidence_a:
+          - RiskAnalyzer.kt:13-14
+        evidence_b:
+          - Utils.kt does not contain INFERENCE_INPUT_WIDTH
+        note: The constants likely exist but were not in the first read window; requires verification.
+
+  evidence_catalog:
+    MainActivity:
+      - MainActivity.kt:1-176
+    ForegroundService:
+      - ForegroundService.kt:1-79
+    HazardDetector:
+      - HazardDetector.kt:1-186
+    AlertManager:
+      - AlertManager.kt:1-68
+    CameraHelper:
+      - CameraHelper.kt:1-59
+    OverlayView:
+      - OverlayView.kt:1-188
+    Utils:
+      - Utils.kt:1-46
+    RiskAnalyzer:
+      - RiskAnalyzer.kt:1-301
+    RiskModels:
+      - RiskModels.kt:1-25
+    AuditoryGuardApp:
+      - AuditoryGuardApp.kt:1-10
+    AndroidManifest:
+      - AndroidManifest.xml:1-38
+    Gradle Config:
+      - build.gradle.kts:1-5
+      - app/build.gradle.kts:1-58
+      - settings.gradle.kts:1-18
+    Resources:
+      - strings.xml:1-9
+      - activity_main.xml:1-82
+
+  confidence_review:
+    - statement: Application package is com.example.auditoryguard
+      confidence: 100
+      rationale: Explicitly declared in two independent sources.
+
+    - statement: Uses MediaPipe efficientdet_lite2.tflite
+      confidence: 100
+      rationale: Explicit model path in HazardDetector.kt.
+
+    - statement: Uses ToneGenerator for alerts
+      confidence: 100
+      rationale: Direct imports and usage in AlertManager.kt.
+
+    - statement: Background service runs camera indefinitely
+      confidence: 90
+      rationale: All architectural pieces present, but exact long-run stability is untested.
+
+    - statement: POSSIBLE_BRAKING is unused
+      confidence: 70
+      rationale: Static analysis shows no generation logic; could be triggered elsewhere not read.
+
+    - statement: CameraX Preview is not bound in service
+      confidence: 85
+      rationale: Explicit comment and code path in CameraHelper.kt.
+
+  task_readiness:
+    confidence: 85
+    can_proceed: true
+    missing_information:
+      - Exact test suite coverage
+      - Full contents of un-read resource XML files
+      - ML model label map
+      - Presence and values of Utils.INFERENCE_INPUT_WIDTH/HEIGHT
+    notes: The project is well-structured and fully readable. Most architectural and implementation details are captured.

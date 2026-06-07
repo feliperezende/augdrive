@@ -1,0 +1,497 @@
+project_knowledge_graph:
+
+  domains:
+    object_detection:
+      description: On-device ML inference using MediaPipe
+    risk_analysis:
+      description: Temporal and spatial rule-based risk scoring
+    alert_management:
+      description: Audio tone generation and volume control
+    camera_capture:
+      description: CameraX-based frame acquisition
+    user_interface:
+      description: Activity, preview, overlays, and controls
+    background_service:
+      description: Foreground service with notification and lifecycle
+
+  relationships:
+    - source: MainActivity
+      target: ForegroundService
+      relationship: binds_to
+      classification: fact
+      confidence: 100
+
+    - source: MainActivity
+      target: CameraHelper
+      relationship: creates_and_owns
+      classification: fact
+      confidence: 100
+
+    - source: MainActivity
+      target: OverlayView
+      relationship: displays
+      classification: fact
+      confidence: 100
+
+    - source: ForegroundService
+      target: HazardDetector
+      relationship: creates_and_owns
+      classification: fact
+      confidence: 100
+
+    - source: ForegroundService
+      target: AlertManager
+      relationship: creates_and_owns
+      classification: fact
+      confidence: 100
+
+    - source: ForegroundService
+      target: CameraHelper
+      relationship: creates_and_owns
+      classification: fact
+      confidence: 100
+
+    - source: HazardDetector
+      target: AlertManager
+      relationship: triggers_alerts_via
+      classification: fact
+      confidence: 100
+
+    - source: HazardDetector
+      target: RiskAnalyzer
+      relationship: invokes
+      classification: fact
+      confidence: 100
+
+    - source: HazardDetector
+      target: Utils
+      relationship: depends_on
+      classification: fact
+      confidence: 100
+
+    - source: CameraHelper
+      target: HazardDetector
+      relationship: delivers_frames_to
+      classification: fact
+      confidence: 100
+
+    - source: CameraHelper
+      target: Utils
+      relationship: depends_on
+      classification: fact
+      confidence: 100
+
+    - source: AlertManager
+      target: AudioManager
+      relationship: uses_system_service
+      classification: fact
+      confidence: 100
+
+    - source: RiskAnalyzer
+      target: RiskModels
+      relationship: uses_types_from
+      classification: fact
+      confidence: 100
+
+    - source: OverlayView
+      target: Detection
+      relationship: renders
+      classification: fact
+      confidence: 100
+
+    - source: OverlayView
+      target: LogEntry
+      relationship: renders
+      classification: fact
+      confidence: 100
+
+    - source: MainActivity
+      target: HazardDetector
+      relationship: accesses_via_service
+      classification: fact
+      confidence: 100
+
+    - source: MainActivity
+      target: AlertManager
+      relationship: accesses_via_service
+      classification: fact
+      confidence: 100
+
+    - source: HazardDetector
+      target: MediaPipeObjectDetector
+      relationship: delegates_inference_to
+      classification: fact
+      confidence: 100
+
+    - source: MediaPipeObjectDetector
+      target: efficientdet_lite2.tflite
+      relationship: loads_model_from
+      classification: fact
+      confidence: 100
+
+    - source: MainActivity
+      target: ForegroundService
+      relationship: hands_off_camera_to
+      classification: inferred
+      confidence: 85
+
+    - source: ForegroundService
+      target: MainActivity
+      relationship: yields_camera_to
+      classification: inferred
+      confidence: 85
+
+    - source: AuditoryGuardApp
+      target: Application
+      relationship: extends
+      classification: fact
+      confidence: 100
+
+  dependencies:
+    MainActivity:
+      depends_on:
+        - ForegroundService
+        - CameraHelper
+        - OverlayView
+        - HazardDetector
+        - AlertManager
+      system_dependencies:
+        - android.permission.CAMERA
+        - android.permission.POST_NOTIFICATIONS
+
+    ForegroundService:
+      depends_on:
+        - HazardDetector
+        - AlertManager
+        - CameraHelper
+      system_dependencies:
+        - NotificationManager
+        - android.permission.FOREGROUND_SERVICE
+        - android.permission.FOREGROUND_SERVICE_CAMERA
+
+    HazardDetector:
+      depends_on:
+        - AlertManager
+        - RiskAnalyzer
+        - Utils
+        - OverlayView (for Detection type)
+      external_libraries:
+        - MediaPipe Tasks Vision
+
+    RiskAnalyzer:
+      depends_on:
+        - RiskModels
+        - Utils
+
+    CameraHelper:
+      depends_on:
+        - HazardDetector
+        - Utils
+      external_libraries:
+        - CameraX
+
+    AlertManager:
+      depends_on:
+        - RiskModels (for RiskEvent type)
+      system_dependencies:
+        - AudioManager
+
+    OverlayView:
+      depends_on: []
+
+    AuditoryGuardApp:
+      depends_on: []
+
+  lifecycles:
+    CameraFrame:
+      created_by:
+        - CameraX / CameraHelper
+      consumed_by:
+        - HazardDetector
+      transformed_into:
+        - Bitmap (via Utils)
+
+    Bitmap:
+      created_by:
+        - Utils.imageProxyToBitmap
+      consumed_by:
+        - MediaPipe ObjectDetector
+        - RiskAnalyzer (for red/green pixel analysis)
+
+    ObjectDetectorResult:
+      created_by:
+        - MediaPipe ObjectDetector
+      consumed_by:
+        - HazardDetector.buildDetections
+
+    Detection (OverlayView):
+      created_by:
+        - HazardDetector
+      consumed_by:
+        - OverlayView
+
+    TrackedDetection:
+      created_by:
+        - HazardDetector
+      consumed_by:
+        - RiskAnalyzer
+
+    RiskEvent:
+      created_by:
+        - RiskAnalyzer
+      consumed_by:
+        - HazardDetector.processRiskEvents
+        - AlertManager.triggerAlert
+        - OverlayView (via DetectionListener)
+
+    Alert (audio):
+      created_by:
+        - AlertManager
+      system_effect:
+        - Audio playback via ToneGenerator
+
+  flows:
+    hazard_detection_pipeline:
+      steps:
+        - CameraFrame
+        - CameraHelper
+        - HazardDetector.processFrame
+        - Utils.imageProxyToInferenceBitmap
+        - MediaPipe ObjectDetector
+        - ObjectDetectorResult
+        - HazardDetector.buildDetections
+        - OverlayView.Detection
+        - OverlayView.setDetections
+
+    risk_analysis_pipeline:
+      steps:
+        - Detection list
+        - TrackedDetection mapping
+        - RiskAnalyzer.analyze
+        - RiskEvent generation
+        - HazardDetector.processRiskEvents
+        - AlertManager.triggerAlert
+        - OverlayView.appendRiskEvent
+
+    camera_handoff_flow:
+      steps:
+        - MainActivity.onResume
+        - rebindCameraToActivity
+        - MainActivity.onPause
+        - cameraHelper.stopCamera
+        - foregroundService.takeOverCameraForBackground
+        - (service retains camera context)
+
+    alert_generation_flow:
+      steps:
+        - RiskEvent or String type
+        - AlertManager.triggerAlert
+        - AudioManager volume override
+        - ToneGenerator.startTone
+        - Handler postDelayed restore
+
+  state_machines:
+    MainActivityLifecycle:
+      created:
+        transitions:
+          - started
+      started:
+        transitions:
+          - resumed
+      resumed:
+        transitions:
+          - paused
+      paused:
+        transitions:
+          - resumed
+          - stopped
+      stopped:
+        transitions:
+          - started
+          - destroyed
+      destroyed:
+        transitions: []
+
+    ForegroundServiceLifecycle:
+      created:
+        transitions:
+          - started
+      started:
+        transitions:
+          - running
+      running:
+        transitions:
+          - destroyed
+      destroyed:
+        transitions: []
+
+    HazardDetectorState:
+      idle:
+        transitions:
+          - loading_model
+      loading_model:
+        transitions:
+          - ready
+          - error
+      ready:
+        transitions:
+          - processing_frame
+          - shutdown
+      processing_frame:
+        transitions:
+          - ready
+          - shutdown
+      error:
+        transitions:
+          - ready
+          - shutdown
+      shutdown:
+        transitions: []
+
+    AlertCooldownState:
+      available:
+        transitions:
+          - cooling_down
+      cooling_down:
+        transitions:
+          - available
+
+  ownership:
+    MainActivity:
+      owns:
+        - previewView
+        - overlayView
+        - statusText
+        - versionText
+        - cameraHelper (activity-bound instance)
+
+    ForegroundService:
+      owns:
+        - hazardDetector
+        - alertManager
+        - cameraHelper (service-bound instance)
+        - serviceScope
+
+    HazardDetector:
+      owns:
+        - objectDetector
+        - coroutineScope
+        - cooldownMap
+        - frameCounter
+        - inFlight
+        - riskAnalyzer
+
+    AlertManager:
+      owns:
+        - audioManager
+
+    RiskAnalyzer:
+      owns:
+        - history
+
+    OverlayView:
+      owns:
+        - detections
+        - logEntries
+        - previewViewRect
+
+  impacts:
+    CONFIDENCE_THRESHOLD:
+      affects:
+        - HazardDetector.buildDetections
+        - ObjectDetectorResult filtering
+        - number of alerts generated
+
+    frameSkip:
+      affects:
+        - HazardDetector.processFrame
+        - detection latency
+        - CPU usage
+
+    COOLDOWN_MS:
+      affects:
+        - HazardDetector.processRiskEvents
+        - AlertManager.triggerAlert frequency
+        - user alert fatigue
+
+    MIN_AREA_RATIO:
+      affects:
+        - HazardDetector.isCloseEnough
+        - number of eligible detections
+
+    FOREGROUND_SERVICE_TYPE_CAMERA:
+      affects:
+        - ForegroundService.onStartCommand
+        - AndroidManifest.xml service declaration
+        - runtime permission behavior on API 29+
+
+    efficientdet_lite2.tflite:
+      affects:
+        - HazardDetector.loadModel
+        - ObjectDetector creation
+        - inference accuracy and latency
+        - supported label set
+
+    CameraHelper.targetResolution:
+      affects:
+        - Utils image conversion speed
+        - inference latency
+        - detection accuracy
+
+    ToneGenerator toneType mapping:
+      affects:
+        - AlertManager.triggerAlert
+        - user perceived alert differentiation
+
+    RiskAnalyzer.maxHistoryMs:
+      affects:
+        - temporal tracking accuracy
+        - risk event generation
+        - memory usage
+
+  bottlenecks:
+    - HazardDetector
+    - MediaPipe ObjectDetector
+    - RiskAnalyzer
+    - CameraHelper (frame throughput)
+
+  risks:
+    - source: MediaPipe ObjectDetector
+      risk: high_inference_latency_on_low_end_devices
+      classification: inferred
+      confidence: 70
+
+    - source: CameraHelper
+      risk: no_lifecycle_owner_binding_in_service
+      classification: fact
+      confidence: 85
+
+    - source: AlertManager
+      risk: temporary_volume_override_may_startle_user
+      classification: inferred
+      confidence: 60
+
+    - source: ForegroundService
+      risk: system_may_kill_service_under_memory_pressure_despite_start_sticky
+      classification: inferred
+      confidence: 65
+
+    - source: efficientdet_lite2.tflite
+      risk: model_may_not_detect_all_relevant_classes_in_low_light
+      classification: inferred
+      confidence: 60
+
+    - source: HazardDetector
+      risk: frame_dropping_may_miss_transient_hazards
+      classification: fact
+      confidence: 80
+
+    - source: Utils.imageProxyToBitmap
+      risk: yuv_to_jpeg_conversion_may_add_latency
+      classification: inferred
+      confidence: 70
+
+    - source: RiskAnalyzer
+      risk: hardcoded_corridors_may_not_match_all_camera_mounting_positions
+      classification: inferred
+      confidence: 75
