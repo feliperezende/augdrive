@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AuditoryGuard</string>
+    <string name="start_service">Start AuditoryGuard</string>
+    <string name="stop_service">Stop AuditoryGuard</string>
+    <string name="notification_title">AuditoryGuard</string>
+    <string name="notification_text">Listening for road hazards...</string>
+    <string name="splash_warning">WARNING: This tool is for educational purposes only.\nIt does not replace safe driving practices.\n\nUse at your own risk.</string>
+</resources>
