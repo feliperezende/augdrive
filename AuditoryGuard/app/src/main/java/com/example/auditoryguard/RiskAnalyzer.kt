@@ -23,7 +23,7 @@ class RiskAnalyzer {
         private val LIGHT_ZONE = RectF(0.25f, 0.0f, 0.75f, 0.50f)
 
         // Min area thresholds (% of frame)
-        private const val MIN_PERSON_AREA = 0.015f
+        private const val MIN_PERSON_AREA = 0.008f
         private const val MIN_VEHICLE_AREA = 0.035f
         private const val MIN_LIGHT_AREA = 0.008f
 
@@ -46,18 +46,18 @@ class RiskAnalyzer {
     ): List<RiskEvent> {
         val now = System.currentTimeMillis()
 
-        // Update history
+        // Analyze each scenario against prior history, then append this frame.
         history.removeAll { now - it.timestampMs > maxHistoryMs }
-        history.addAll(detections.map { d ->
-            TrackedDetection(d.label, d.score, d.rect, now)
-        })
 
         val events = mutableListOf<RiskEvent>()
 
-        // Analyze each scenario
         analyzePedestrianInPath(detections)?.let { events.add(it) }
         analyzeVehicleClosing(detections)?.let { events.add(it) }
         analyzeRedLight(detections, bitmap, imageWidth, imageHeight)?.let { events.add(it) }
+
+        history.addAll(detections.map { d ->
+            TrackedDetection(d.label, d.score, d.rect, now)
+        })
 
         return events
     }

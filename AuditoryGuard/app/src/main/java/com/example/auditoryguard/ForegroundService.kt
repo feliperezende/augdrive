@@ -29,9 +29,15 @@ class ForegroundService : Service() {
 
     fun getHazardDetector(): HazardDetector? = hazardDetector
     fun getAlertManager(): AlertManager? = alertManager
+
     fun takeOverCameraForBackground() {
-        // Service camera is already running in background; nothing to do
+        val detector = hazardDetector ?: return
+        if (cameraHelper == null) {
+            cameraHelper = CameraHelper(this, null, detector)
+        }
+        cameraHelper?.startCamera()
     }
+
     fun releaseCamera() {
         cameraHelper?.stopCamera()
         cameraHelper = null

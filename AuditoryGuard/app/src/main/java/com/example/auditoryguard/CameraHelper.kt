@@ -26,8 +26,10 @@ class CameraHelper(
     private val cameraExecutor = Executors.newSingleThreadExecutor()
     private val analysisScope = CoroutineScope(Dispatchers.Default)
     private var preview: Preview? = null
+    private var surfaceProvider: Preview.SurfaceProvider? = null
 
     fun setSurfaceProvider(provider: Preview.SurfaceProvider) {
+        surfaceProvider = provider
         preview?.setSurfaceProvider(provider)
     }
 
@@ -48,6 +50,7 @@ class CameraHelper(
 
                 val preview = Preview.Builder().build()
                 this.preview = preview
+                surfaceProvider?.let { preview.setSurfaceProvider(it) }
                 val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
                 cameraProvider?.unbindAll()

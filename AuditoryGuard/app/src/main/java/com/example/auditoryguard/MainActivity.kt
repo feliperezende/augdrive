@@ -105,10 +105,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        val intent = Intent(this, ForegroundService::class.java)
-        ContextCompat.startForegroundService(this, intent)
-        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
-        bound = true
+        if (hasRequiredPermissions()) {
+            ensureServiceStartedAndBound()
+        }
     }
 
     override fun onResume() {
@@ -156,16 +155,34 @@ class MainActivity : AppCompatActivity() {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        if (permissions.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }) {
+        if (hasRequiredPermissions()) {
             startAuditoryGuard()
         } else {
             requestPermissionLauncher.launch(permissions.toTypedArray())
         }
     }
 
-    private fun startAuditoryGuard() {
+    private fun hasRequiredPermissions(): Boolean {
+        val permissions = mutableListOf(Manifest.permission.CAMERA)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        return permissions.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun ensureServiceStartedAndBound() {
         val intent = Intent(this, ForegroundService::class.java)
         ContextCompat.startForegroundService(this, intent)
+        if (!bound) {
+            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+            bound = true
+        }
+    }
+
+    private fun startAuditoryGuard() {
+        ensureServiceStartedAndBound()
         Toast.makeText(this, "AuditoryGuard started", Toast.LENGTH_SHORT).show()
     }
 

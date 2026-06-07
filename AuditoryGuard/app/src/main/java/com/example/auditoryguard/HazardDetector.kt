@@ -30,7 +30,9 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
     private val coroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val cooldownMap = mutableMapOf<String, Long>()
     private val COOLDOWN_MS = 4000L
+    private val MODEL_SCORE_THRESHOLD = 0.35f
     private val CONFIDENCE_THRESHOLD = 0.65f
+    private val PERSON_CONFIDENCE_THRESHOLD = 0.45f
     private val MIN_AREA_RATIO = 0.01f  // 1% of image area (was 2%)
 
     private val detectorExecutor = Executors.newSingleThreadExecutor()
@@ -56,8 +58,8 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
 
             val options = ObjectDetector.ObjectDetectorOptions.builder()
                 .setBaseOptions(baseOptions)
-                .setMaxResults(5)
-                .setScoreThreshold(CONFIDENCE_THRESHOLD)
+                .setMaxResults(10)
+                .setScoreThreshold(MODEL_SCORE_THRESHOLD)
                 .setRunningMode(RunningMode.IMAGE)
                 .build()
 
@@ -90,8 +92,8 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
                 val t2 = System.nanoTime()
                 val result = objectDetector?.detect(mpImage)
                 val t3 = System.nanoTime()
-                val inferenceW = Utils.INFERENCE_INPUT_WIDTH
-                val inferenceH = Utils.INFERENCE_INPUT_HEIGHT
+                val inferenceW = prepared.width
+                val inferenceH = prepared.height
                 result?.let {
                     val detections = buildDetections(it, inferenceW, inferenceH)
                     detectionListener?.onDetections(detections, inferenceW, inferenceH)
@@ -103,8 +105,8 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
                     val riskEvents = riskAnalyzer.analyze(
                         trackedDetections,
                         prepared.bitmap,
-                        Utils.INFERENCE_INPUT_WIDTH,
-                        Utils.INFERENCE_INPUT_HEIGHT
+                        inferenceW,
+                        inferenceH
                     )
 
                     processRiskEvents(riskEvents)
@@ -135,7 +137,9 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
         val list = mutableListOf<OverlayView.Detection>()
         for (detection in result.detections()) {
             val category = detection.categories().firstOrNull() ?: continue
-            if (category.score() < CONFIDENCE_THRESHOLD) continue
+            val label = category.categoryName()
+            val threshold = if (isPersonLabel(label)) PERSON_CONFIDENCE_THRESHOLD else CONFIDENCE_THRESHOLD
+            if (category.score() < threshold) continue
             val bbox = detection.boundingBox()
             if (!isCloseEnough(bbox, imageWidth, imageHeight)) continue
 
@@ -148,7 +152,7 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
             list.add(
                 OverlayView.Detection(
                     rect = rect,
-                    label = category.categoryName(),
+                    label = label,
                     score = category.score()
                 )
             )
@@ -176,6 +180,11 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
         val area = (bbox.width() * bbox.height())
         val imageArea = (imageWidth * imageHeight).toFloat()
         return area > (imageArea * MIN_AREA_RATIO)
+    }
+
+    private fun isPersonLabel(label: String): Boolean {
+        val l = label.lowercase()
+        return l.contains("person") || l.contains("pedestrian")
     }
 
     fun shutdown() {
