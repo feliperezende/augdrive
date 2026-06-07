@@ -11,6 +11,16 @@ import java.io.ByteArrayOutputStream
 
 object Utils {
 
+    const val INFERENCE_INPUT_WIDTH = 640
+    const val INFERENCE_INPUT_HEIGHT = 480
+
+    data class PreparedBitmap(val bitmap: Bitmap, val width: Int, val height: Int)
+
+    fun imageProxyToInferenceBitmap(imageProxy: ImageProxy): PreparedBitmap {
+        val bitmap = imageProxyToBitmap(imageProxy)
+        return PreparedBitmap(bitmap, bitmap.width, bitmap.height)
+    }
+
     fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap {
         val buffer = imageProxy.planes[0].buffer
         val bytes = ByteArray(buffer.remaining())

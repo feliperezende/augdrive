@@ -10,8 +10,8 @@ class RiskAnalyzer {
     private val maxHistoryMs = 2000L
 
     companion object {
-        private const val FRAME_WIDTH = Utils.INFERENCE_INPUT_WIDTH.toFloat()
-        private const val FRAME_HEIGHT = Utils.INFERENCE_INPUT_HEIGHT.toFloat()
+        private val FRAME_WIDTH = Utils.INFERENCE_INPUT_WIDTH.toFloat()
+        private val FRAME_HEIGHT = Utils.INFERENCE_INPUT_HEIGHT.toFloat()
 
         // Road corridor: lower-middle of the frame
         private val ROAD_CORRIDOR = RectF(0.25f, 0.45f, 0.75f, 1.0f)

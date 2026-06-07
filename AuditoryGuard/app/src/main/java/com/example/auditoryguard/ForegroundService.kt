@@ -23,12 +23,26 @@ class ForegroundService : Service() {
         const val NOTIFICATION_ID = 1
     }
 
+    inner class LocalBinder : android.os.Binder() {
+        fun getService(): ForegroundService = this@ForegroundService
+    }
+
+    fun getHazardDetector(): HazardDetector? = hazardDetector
+    fun getAlertManager(): AlertManager? = alertManager
+    fun takeOverCameraForBackground() {
+        // Service camera is already running in background; nothing to do
+    }
+    fun releaseCamera() {
+        cameraHelper?.stopCamera()
+        cameraHelper = null
+    }
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         alertManager = AlertManager(this)
         hazardDetector = HazardDetector(this, alertManager!!)
-        cameraHelper = CameraHelper(this, hazardDetector!!)
+        cameraHelper = CameraHelper(this, null, hazardDetector!!)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -53,7 +67,7 @@ class ForegroundService : Service() {
         return START_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent?): IBinder = LocalBinder()
 
     override fun onDestroy() {
         super.onDestroy()
