@@ -32,8 +32,9 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
     private val COOLDOWN_MS = 4000L
     private val MODEL_SCORE_THRESHOLD = 0.35f
     private val CONFIDENCE_THRESHOLD = 0.65f
-    private val PERSON_CONFIDENCE_THRESHOLD = 0.45f
-    private val MIN_AREA_RATIO = 0.01f  // 1% of image area (was 2%)
+    private val PERSON_CONFIDENCE_THRESHOLD = 0.35f
+    private val MIN_AREA_RATIO = 0.01f  // 1% of image area
+    private val MIN_PERSON_AREA_RATIO = 0.003f
 
     private val detectorExecutor = Executors.newSingleThreadExecutor()
 
@@ -141,7 +142,7 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
             val threshold = if (isPersonLabel(label)) PERSON_CONFIDENCE_THRESHOLD else CONFIDENCE_THRESHOLD
             if (category.score() < threshold) continue
             val bbox = detection.boundingBox()
-            if (!isCloseEnough(bbox, imageWidth, imageHeight)) continue
+            if (!isCloseEnough(bbox, imageWidth, imageHeight, label)) continue
 
             val rect = RectF(
                 bbox.left,
@@ -176,10 +177,11 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
         }
     }
 
-    private fun isCloseEnough(bbox: RectF, imageWidth: Int, imageHeight: Int): Boolean {
+    private fun isCloseEnough(bbox: RectF, imageWidth: Int, imageHeight: Int, label: String): Boolean {
         val area = (bbox.width() * bbox.height())
         val imageArea = (imageWidth * imageHeight).toFloat()
-        return area > (imageArea * MIN_AREA_RATIO)
+        val minAreaRatio = if (isPersonLabel(label)) MIN_PERSON_AREA_RATIO else MIN_AREA_RATIO
+        return area > (imageArea * minAreaRatio)
     }
 
     private fun isPersonLabel(label: String): Boolean {

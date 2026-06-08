@@ -13,8 +13,8 @@ class RiskAnalyzer {
         private val FRAME_WIDTH = Utils.INFERENCE_INPUT_WIDTH.toFloat()
         private val FRAME_HEIGHT = Utils.INFERENCE_INPUT_HEIGHT.toFloat()
 
-        // Road corridor: lower-middle of the frame
-        private val ROAD_CORRIDOR = RectF(0.25f, 0.45f, 0.75f, 1.0f)
+        // Road corridor: aggressive pedestrian alert zone, covering most of the lower frame.
+        private val ROAD_CORRIDOR = RectF(0.10f, 0.30f, 0.90f, 1.0f)
 
         // Vehicle forward corridor (slightly wider)
         private val FORWARD_CORRIDOR = RectF(0.20f, 0.30f, 0.80f, 1.0f)
@@ -23,7 +23,7 @@ class RiskAnalyzer {
         private val LIGHT_ZONE = RectF(0.25f, 0.0f, 0.75f, 0.50f)
 
         // Min area thresholds (% of frame)
-        private const val MIN_PERSON_AREA = 0.008f
+        private const val MIN_PERSON_AREA = 0.003f
         private const val MIN_VEHICLE_AREA = 0.035f
         private const val MIN_LIGHT_AREA = 0.008f
 
@@ -32,6 +32,9 @@ class RiskAnalyzer {
 
         // Min consecutive frames for persistence
         private const val MIN_PERSISTENCE_FRAMES = 2
+
+        private const val PERSON_LATERAL_MOVEMENT_THRESHOLD = 0.03f
+        private const val PERSON_NEAR_BOTTOM_THRESHOLD = 0.55f
 
         // Red pixel thresholds for traffic light
         private const val RED_RATIO_THRESHOLD = 0.30f
@@ -89,7 +92,7 @@ class RiskAnalyzer {
             val isMovingLaterally = recentPersons.size >= 2 &&
                 recentPersons.any { p ->
                     val prevCenter = p.rect.centerX() / FRAME_WIDTH
-                    kotlin.math.abs(prevCenter - centerX) > 0.05f
+                    kotlin.math.abs(prevCenter - centerX) > PERSON_LATERAL_MOVEMENT_THRESHOLD
                 }
 
             val justEnteredDanger = recentPersons.size < 3 &&
@@ -97,7 +100,7 @@ class RiskAnalyzer {
                     intersectsCorridor(p.rect, ROAD_CORRIDOR)
                 }
 
-            if (isMovingLaterally || justEnteredDanger || bottomY > 0.75f) {
+            if (isMovingLaterally || justEnteredDanger || bottomY > PERSON_NEAR_BOTTOM_THRESHOLD) {
                 Log.d("RiskAnalyzer", "PEDESTRIAN_IN_PATH: centerX=$centerX, bottomY=$bottomY")
                 return RiskEvent(
                     type = RiskEventType.PEDESTRIAN_IN_PATH,
