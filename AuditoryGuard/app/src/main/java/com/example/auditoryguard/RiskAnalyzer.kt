@@ -13,8 +13,8 @@ class RiskAnalyzer {
         private val FRAME_WIDTH = Utils.INFERENCE_INPUT_WIDTH.toFloat()
         private val FRAME_HEIGHT = Utils.INFERENCE_INPUT_HEIGHT.toFloat()
 
-        // Road corridor: aggressive pedestrian alert zone, covering most of the lower frame.
-        private val ROAD_CORRIDOR = RectF(0.10f, 0.30f, 0.90f, 1.0f)
+        // Road corridor: balanced pedestrian alert zone
+        private val ROAD_CORRIDOR = RectF(0.20f, 0.35f, 0.80f, 1.0f)
 
         // Vehicle forward corridor (slightly wider)
         private val FORWARD_CORRIDOR = RectF(0.20f, 0.30f, 0.80f, 1.0f)
@@ -23,7 +23,7 @@ class RiskAnalyzer {
         private val LIGHT_ZONE = RectF(0.25f, 0.0f, 0.75f, 0.50f)
 
         // Min area thresholds (% of frame)
-        private const val MIN_PERSON_AREA = 0.003f
+        private const val MIN_PERSON_AREA = 0.005f
         private const val MIN_VEHICLE_AREA = 0.035f
         private const val MIN_LIGHT_AREA = 0.008f
 
@@ -33,8 +33,8 @@ class RiskAnalyzer {
         // Min consecutive frames for persistence
         private const val MIN_PERSISTENCE_FRAMES = 2
 
-        private const val PERSON_LATERAL_MOVEMENT_THRESHOLD = 0.03f
-        private const val PERSON_NEAR_BOTTOM_THRESHOLD = 0.55f
+        private const val PERSON_LATERAL_MOVEMENT_THRESHOLD = 0.04f
+        private const val PERSON_NEAR_BOTTOM_THRESHOLD = 0.65f
 
         // Red pixel thresholds for traffic light
         private const val RED_RATIO_THRESHOLD = 0.30f
@@ -277,8 +277,14 @@ class RiskAnalyzer {
     }
 
     private fun intersectsCorridor(rect: RectF, corridor: RectF): Boolean {
-        return rect.left < corridor.right && rect.right > corridor.left &&
-            rect.top < corridor.bottom && rect.bottom > corridor.top
+        val normRect = RectF(
+            rect.left / FRAME_WIDTH,
+            rect.top / FRAME_HEIGHT,
+            rect.right / FRAME_WIDTH,
+            rect.bottom / FRAME_HEIGHT
+        )
+        return normRect.left < corridor.right && normRect.right > corridor.left &&
+            normRect.top < corridor.bottom && normRect.bottom > corridor.top
     }
 
     private fun isPerson(label: String): Boolean {

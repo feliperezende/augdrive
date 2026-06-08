@@ -32,9 +32,9 @@ class HazardDetector(private val context: Context, private val alertManager: Ale
     private val COOLDOWN_MS = 4000L
     private val MODEL_SCORE_THRESHOLD = 0.35f
     private val CONFIDENCE_THRESHOLD = 0.65f
-    private val PERSON_CONFIDENCE_THRESHOLD = 0.35f
+    private val PERSON_CONFIDENCE_THRESHOLD = 0.45f
     private val MIN_AREA_RATIO = 0.01f  // 1% of image area
-    private val MIN_PERSON_AREA_RATIO = 0.003f
+    private val MIN_PERSON_AREA_RATIO = 0.005f
 
     private val detectorExecutor = Executors.newSingleThreadExecutor()
 
